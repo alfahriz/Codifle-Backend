@@ -1,6 +1,7 @@
 package com.codifle.resource;
 
 import com.codifle.service.DbService;
+import com.codifle.util.ApiResponse;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
@@ -23,7 +24,7 @@ public class ProductResource {
                 ? Response.ok(db.queryList("SELECT * FROM fn_get_products(?)", category)).build()
                 : Response.ok(db.queryList("SELECT * FROM fn_get_products()")).build();
         } catch (Exception e) {
-            return DbService.serverError(e);
+            return ApiResponse.serverError(e);
         }
     }
 
@@ -36,7 +37,7 @@ public class ProductResource {
                 ? Response.ok(db.queryCount("SELECT fn_count_products(?)", category)).build()
                 : Response.ok(db.queryCount("SELECT fn_count_products()")).build();
         } catch (Exception e) {
-            return DbService.serverError(e);
+            return ApiResponse.serverError(e);
         }
     }
 
@@ -47,7 +48,7 @@ public class ProductResource {
         try {
             return Response.ok(db.queryList("SELECT * FROM fn_get_product_categories()")).build();
         } catch (Exception e) {
-            return DbService.serverError(e);
+            return ApiResponse.serverError(e);
         }
     }
 
@@ -58,7 +59,7 @@ public class ProductResource {
         try {
             return Response.ok(db.queryCount("SELECT fn_count_product_categories()")).build();
         } catch (Exception e) {
-            return DbService.serverError(e);
+            return ApiResponse.serverError(e);
         }
     }
 
@@ -73,7 +74,7 @@ public class ProductResource {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity("{\"error\":\"Invalid product ID format\"}").build();
         } catch (Exception e) {
-            return DbService.serverError(e);
+            return ApiResponse.serverError(e);
         }
     }
 
@@ -88,7 +89,7 @@ public class ProductResource {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity("{\"error\":\"Invalid product ID format\"}").build();
         } catch (Exception e) {
-            return DbService.serverError(e);
+            return ApiResponse.serverError(e);
         }
     }
 }
