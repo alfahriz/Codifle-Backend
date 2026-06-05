@@ -42,6 +42,7 @@ nb-configuration.xml
 # Secrets — never commit
 privateKey.pem
 *.pem
+application.properties.prod
 
 # Plugin directory
 /.quarkus/cli/plugins/
