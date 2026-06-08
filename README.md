@@ -1,63 +1,153 @@
-# codifle-api
+# Codifle API
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Headless content delivery backend for company websites. One API powers every section — hero, about, services, products, blog, clients, partners, contact, and SEO — all content-managed, zero redeployment required.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+Built on **Quarkus 3.36.1** (Java 21) with PostgreSQL.
 
-## Running the application in dev mode
+---
 
-You can run your application in dev mode that enables live coding using:
+## Features
 
-```shell script
+### Content API
+- **10+ page sections** — each independently configurable: visibility toggle, display order, full content management
+- **Navigation** — auto-syncs to visible sections; supports dropdowns and nested links
+- **Hero** — title lines, subtitle, dual CTAs, stat blocks
+- **Manifesto** — eyebrow + statement
+- **About** — body content, CTAs, milestone timeline, stat cards with featured flag
+- **Services** — hierarchical (service → sub-services), icon/gradient support, slug-based lookup
+- **Products** — category filtering, feature lists, demo links, branded gradients
+- **Clients** — 3-track layout for flexible display, active/order control
+- **Partners** — logo showcase with attribution links
+- **Blog** — paginated articles, category filtering, author profiles, featured flag, read-time, SEO slugs
+- **Contact** — form submission endpoint, stored with read/unread status
+- **Brand Theme** — color tokens (light + dark), typography, font URLs — design system via API
+
+### SEO
+- `GET /sitemap.xml` — auto-generated from live services, products, and articles
+- `GET /robots.txt` — dynamically served with sitemap reference
+
+### Authentication & Security
+- **JWT with RSA-2048** — asymmetric cryptography, 8-hour expiry, role-based access control
+- **Bcrypt password hashing** — cost 12, via PostgreSQL `pgcrypto`
+- **Rate limiting** — 5 req/min on `/auth/login` and `/contact/submit`; 120 req/min globally per IP (Bucket4j)
+- **Security headers** — X-Frame-Options, X-XSS-Protection, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- **Safe error responses** — all unhandled errors return generic `{"error":"Internal server error"}`, no stack trace exposure
+
+### Developer Experience
+- **OpenAPI / Swagger UI** at `/swagger-ui` and `/openapi`
+- **PostgreSQL function layer** — all data access via stored functions (`fn_get_*`, `fn_count_*`, `fn_*`)
+- **Snake_case → camelCase** auto-conversion on all query results
+- **Environment-based config** — 12-factor ready
+- **3 build modes** — dev (live reload), JVM JAR, GraalVM native binary
+
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/auth/login` | Login, returns JWT |
+| GET | `/api/auth/me` | Current user info (admin) |
+| GET | `/api/company` | Company profile |
+| GET | `/api/company/socials` | Social media links |
+| GET | `/api/theme` | Brand theme tokens |
+| GET | `/api/sections` | All sections with order/visibility |
+| GET | `/api/sections/nav` | Visible nav links |
+| GET | `/api/hero` | Hero content |
+| GET | `/api/hero/stats` | Hero stat blocks |
+| GET | `/api/manifesto` | Manifesto statement |
+| GET | `/api/about` | About content |
+| GET | `/api/about/milestones` | Company milestones |
+| GET | `/api/about/stats` | About stat cards |
+| GET | `/api/services` | All active services |
+| GET | `/api/services/{key}` | Single service by slug |
+| GET | `/api/services/{key}/subs` | Sub-services |
+| GET | `/api/products` | Products (optional `?category=`) |
+| GET | `/api/products/categories` | Product categories |
+| GET | `/api/products/{id}/features` | Product features |
+| GET | `/api/clients` | Active clients (3-track ordered) |
+| GET | `/api/partners` | Active partners |
+| GET | `/api/blog/articles` | Paginated articles (`?limit=&offset=&category=`) |
+| GET | `/api/blog/articles/{slug}` | Single article by slug |
+| GET | `/api/blog/section` | Blog section metadata |
+| GET | `/api/contact` | Contact section content |
+| POST | `/api/contact/submit` | Submit contact form |
+| GET | `/sitemap.xml` | Auto-generated XML sitemap |
+| GET | `/robots.txt` | Robots file |
+
+Most endpoints also have a `/count` variant (e.g. `GET /api/services/count`).
+
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_URL` | `jdbc:postgresql://localhost:5432/codifle` | JDBC connection URL |
+| `DB_USERNAME` | `postgres` | Database user |
+| `DB_PASSWORD` | `changeme` | Database password |
+| `CORS_ORIGINS` | `*` | Allowed CORS origins |
+| `SITE_BASE_URL` | `https://codifle.com` | Base URL for sitemap/robots |
+
+---
+
+## Running
+
+**Dev mode (live reload):**
+```shell
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+Dev UI available at `http://localhost:8080/q/dev/`
 
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
+**Production JAR:**
+```shell
 ./mvnw package
+java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
+**Über-JAR:**
+```shell
 ./mvnw package -Dquarkus.package.jar.type=uber-jar
+java -jar target/*-runner.jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
+**Native executable (requires GraalVM):**
+```shell
 ./mvnw package -Dnative
+./target/codifle-api-1.0.0-SNAPSHOT-runner
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
+**Native via container (no GraalVM needed):**
+```shell
 ./mvnw package -Dnative -Dquarkus.native.container-build=true
 ```
 
-You can then execute your native executable with: `./target/codifle-api-1.0.0-SNAPSHOT-runner`
+---
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+## Database
 
-## Related Guides
+PostgreSQL with all data access through stored functions. Schema and functions in:
+- `Workspace/Database/01_schema.sql` — tables
+- `Workspace/Database/02_functions.sql` — all `fn_get_*` / `fn_count_*` / action functions
+- `Workspace/Database/05_auth.sql` — admin users, auth function
 
-- Hibernate Validator ([guide](https://quarkus.io/guides/validation)): Bean validation using Hibernate Validator and Jakarta Validation annotations
-- SmallRye JWT ([guide](https://quarkus.io/guides/security-jwt)): Secure your applications with JSON Web Token
-- SmallRye OpenAPI ([guide](https://quarkus.io/guides/openapi-swaggerui)): Generate OpenAPI schemas and serve Swagger UI for REST API documentation
-- Agroal - DB connection pool ([guide](https://quarkus.io/guides/datasource)): JDBC Datasources and connection pooling
-- JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
+Requires `pgcrypto` extension enabled on the database.
+
+Default admin credentials: `admin` / `changeme123` — **change before production**.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | Quarkus 3.36.1 |
+| Language | Java 21 |
+| Database | PostgreSQL |
+| Auth | SmallRye JWT + RSA-2048 |
+| Rate Limiting | Bucket4j 7.6.0 |
+| Validation | Hibernate Validator |
+| Serialization | Jackson |
+| Connection Pool | Agroal |
+| Docs | SmallRye OpenAPI |
